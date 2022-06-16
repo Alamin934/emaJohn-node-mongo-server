@@ -18,6 +18,7 @@ async function run() {
         const database = client.db('online_shop');
         const productsCollection = database.collection('products');
 
+        //Get API method for get product api
         app.get('/products', async (req, res) => {
             const cursor = productsCollection.find({});
 
@@ -36,6 +37,14 @@ async function run() {
                 products
             });
         });
+
+        //Use Post for send data by keys
+        app.post('/products/byKeys', async (req, res) => {
+            const keys = req.body;
+            const query = { key: { $in: keys } };
+            const products = await productsCollection.find(query).toArray();
+            res.json(products);
+        })
 
 
 
