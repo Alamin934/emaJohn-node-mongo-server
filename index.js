@@ -22,24 +22,23 @@ async function run() {
         //Get API method for get product api
         app.get('/products', async (req, res) => {
             const cursor = productsCollection.find({});
-
-            const count = await cursor.count();
-            const page = req.query.page;
+            const currentPage = req.query.currentPage;
             const size = parseInt(req.query.size);
+            const count = await productsCollection.countDocuments();
             let products;
-            if (page) {
-                products = await cursor.skip(page * size).limit(size).toArray();
-
+            if (currentPage) {
+                products = await cursor.skip(currentPage * size).limit(size).toArray();
             } else {
                 products = await cursor.toArray();
             }
             res.send({
-                count,
-                products
+                products,
+                count
             });
         });
 
-        //Use Post for send data by keys
+
+        //Use Post method for get
         app.post('/products/byKeys', async (req, res) => {
             const keys = req.body;
             const query = { key: { $in: keys } };
@@ -47,13 +46,12 @@ async function run() {
             res.json(products);
         });
 
-        //Order Post Api
+        //Order post method
         app.post('/orders', async (req, res) => {
-            const order = req.body;
-            const result = await orderCollection.insertOne(order);
+            const orders = req.body;
+            const result = await orderCollection.insertOne(orders);
             res.json(result);
         })
-
 
 
 
