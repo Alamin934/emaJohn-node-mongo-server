@@ -46,9 +46,22 @@ async function run() {
             res.json(products);
         });
 
+        //Order Get Method
+        app.get('/orders', async (req, res) => {
+            console.log(req.headers.authorization)
+            let query = {};
+            const email = req.query.email;
+            if (email) {
+                query = { email: email }
+            }
+            const cursor = orderCollection.find(query);
+            const result = await cursor.toArray();
+            res.send(result);
+        })
         //Order post method
         app.post('/orders', async (req, res) => {
             const orders = req.body;
+            orders.cratedAt = new Date();
             const result = await orderCollection.insertOne(orders);
             res.json(result);
         })
