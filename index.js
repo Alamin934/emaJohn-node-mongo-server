@@ -1,8 +1,14 @@
 const express = require('express');
 const { MongoClient, ServerApiVersion } = require('mongodb');
 require('dotenv').config();
+var admin = require("firebase-admin");
 const cors = require('cors');
-const { initializeApp } = require('firebase-admin/app');
+
+
+//Firebase admin initialization
+var serviceAccount = require("./simple-ema-john-c08e5-firebase-adminsdk-cxei1-de5531f5b9.json");
+
+
 
 const app = express();
 const port = process.env.PORT || 5000;
@@ -15,9 +21,20 @@ const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster
 const client = new MongoClient(uri, { useNewUrlParser: true, useUnifiedTopology: true, serverApi: ServerApiVersion.v1 });
 
 
+admin.initializeApp({
+    credential: admin.credential.cert(serviceAccount)
+});
+
+
 async function verifyToken(req, res, next) {
-    if (req.headers.authorization.startsWith('Bearar ')) {
-        const token = req.headers.authorization.split('Bearar')[1];
+    if (req.headers?.authorization?.startsWith('Bearar ')) {
+        const idToken = req.headers.authorization.split('Bearar ')[1];
+        try {
+            const decodedUser = await admin.auth().verifyIdToken(idToken);
+            req.decodedUserEmail = decodedUser.email;
+        } catch {
+
+        }
     }
 
     next();
@@ -58,15 +75,17 @@ async function run() {
         });
 
         //Order Get Method
-        app.get('/orders', async (req, res) => {
-            let query = {};
+        app.get('/orders', verifyToken, async (req, res) => {
             const email = req.query.email;
-            if (email) {
-                query = { email: email }
+            if (req.decodedUserEmail === email) {
+                const query = { email: email };
+                const cursor = orderCollection.find(query);
+                const result = await cursor.toArray();
+                res.send(result);
             }
-            const cursor = orderCollection.find(query);
-            const result = await cursor.toArray();
-            res.send(result);
+            else {
+                res.status(401).json({ message: 'User not Authorized' })
+            }
         })
         //Order post method
         app.post('/orders', async (req, res) => {
